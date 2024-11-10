@@ -50,7 +50,7 @@ class User extends CI_Controller
 		$obj["resultado"] = TRUE != FALSE;
 		$obj["mensaje"] = $obj["resultado"] ?
 			"inicio de sesion correcto" : "No se encontraron usuarios";
-		$obj["id"] = $r;
+		$obj["user"] = $r;
 
 		echo json_encode($obj);
 	}
