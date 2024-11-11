@@ -12,7 +12,7 @@ class User_model extends CI_Model
 	public function validate_user($data)
 	{
 		$rs=$this->db
-			->select("id, type")
+			->select("id, type, score")
 			->from("users")
 			->where('passwd', $data['passwd'])
 			->where('email', $data['email'])
@@ -49,6 +49,15 @@ class User_model extends CI_Model
 		//die($this->db->last_query());
 		$rs=$this->db->affected_rows();
 		return $rs >0;
+	}
+
+	public function update_score($id, $data):bool
+	{
+		$this->db
+			->where('id', $id)
+			->update("users", $data);
+		$rs=$this->db->affected_rows();
+		return $rs > 0;
 	}
 
 }

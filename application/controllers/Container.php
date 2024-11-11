@@ -5,6 +5,7 @@ class Container extends CI_Controller
 	{
 		parent::__construct();
 		$this->load->model("container_model");
+		$this->load->model("user_model");
 		header('Access-Control-Allow-Origin: *');
 		header('Access-Control-Allow-Headers: Content-Type');
 	}
@@ -80,44 +81,97 @@ class Container extends CI_Controller
 		echo json_encode($obj);
 	}
 
-//	public function update_user():void
-//	{
-//		$id=$this->input->post('id');
-//		$name=$this->input->post('name');
-//		$lastname=$this->input->post('lastname');
-//		$type=$this->input->post('type');
-//		$passwd=$this->input->post('passwd');
-//		$email=$this->input->post('email');
-//		$data=array(
-//			'name'=>$name,
-//			'lastname'=>$lastname,
-//			'type'=>$type,
-//			'passwd'=>$passwd,
-//			'email'=>$email
-//		);
-//		$r=$this->user_model->update_user($data, $id);
-//		$obj["resultado"] = $r != NULL;
-//		$obj["mensaje"] = $obj["resultado"] ?
-//			"Se actualizo correctamente el usuario" :
-//			"No se actualizaron los datos";
-//
-//		echo json_encode($obj);
-//	}
-//
-//
-//
-//	public function get_user():void
-//	{
-//		$id=$this->input->post('id');
-//		$r=$this->user_model->get_user($id);
-//		$obj["resultado"] = TRUE != FALSE;
-//		$obj["mensaje"] = $obj["resultado"] ?
-//			"recuperacion de datos correcto" : "No se encontraron datos";
-//		$obj["user"] = $r;
-//
-//		echo json_encode($obj);
-//	}
+	public function contribution():void
+	{
+		$id_container=$this->input->post('id_container');
+		$email=$this->input->post('email');
+		$passwd=$this->input->post('passwd');
 
+		$r_levels_diff=$this->container_model->get_levels_diff($id_container);
+		if ($r_levels_diff == false) {
+			$obj["resultado"] = false;
+			$obj["mensaje"]="Error, no se enconraron registros anteriores";
+			echo json_encode($obj);
+			return;
+		}
+		$grams_diff = (double) $r_levels_diff['grams'];
 
+		$r_levels=$this->container_model->get_levels($id_container);
+		if ($r_levels == false) {
+			$obj["resultado"] = false;
+			$obj["mensaje"]="Error, no se enconraron registros nuevos";
+			echo json_encode($obj);
+			return;
+		}
+		$grams_new = (double) $r_levels['grams'];
+		$grams = $grams_new - $grams_diff;
+		$score = $grams/20;
+
+		$data_levels=array(
+			'status'=> true
+		);
+
+		$r_status=$this->container_model->update_levels($id_container, $data_levels);
+		if (!$r_status) {
+			$obj["resultado"] = false;
+			$obj["mensaje"]="Error al actualizar el estatus";
+			echo json_encode($obj);
+			return;
+		}
+
+		$data_user=array(
+			'email'=>$email,
+			'passwd'=>$passwd
+		);
+
+		$r_user=$this->user_model->validate_user($data_user);
+		if (!$r_user) {
+			$obj["resultado"] = false;
+			$obj["mensaje"]="Error encontrando score de usuario";
+			echo json_encode($obj);
+			return;
+		}
+		$id_user = $r_user[0]->id;
+		$score_init = (double) $r_user[0]->score;
+		$score_final = $score_init + $score;
+
+		$data_score = array(
+			'score'=>$score_final
+		);
+		$r_user=$this->user_model->update_score($id_user, $data_score);
+		if ($r_user) {
+			$obj["resultado"] = true;
+			$obj["mensaje"]="Se a actualizado el score de usuario correctamente";
+			echo json_encode($obj);
+		} else {
+			$obj["resultado"] = false;
+			$obj["mensaje"]="Error al actualizar el score de usuario";
+			echo json_encode($obj);
+		}
+	}
+	public function reset_container():void
+	{
+		$id_container=$this->input->post('id_container');
+		$data_container=array(
+			'status'=> true
+		);
+		$data_fill=array(
+			'id_container'=> $id_container,
+			'centimeters'=> 0,
+			'status'=> true,
+		);
+		$data_weight=array(
+			'id_container'=> $id_container,
+			'grams'=> 0,
+			'status'=> true,
+		);
+		$r=$this->container_model->reset_container($id_container, $data_container, $data_fill, $data_weight);
+		$obj["resultado"] = $r != false;
+		$obj["mensaje"] = $obj["resultado"] ?
+			"Se reseteo el contenedor correctamente" :
+			"No se resetearon los datos, intente mas tarde";
+
+		echo json_encode($obj);
+	}
 
 }
