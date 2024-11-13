@@ -15,6 +15,11 @@ class Container extends CI_Controller
 		$id_container=$this->input->get('id_container');
 		$grams=$this->input->get('grams');
 		$centimeters=$this->input->get('centimeters');
+		if ($grams == null || $centimeters == null) {
+			$obj["mensaje"] = "No se estan recibiendo los datos de manera correcta";
+			echo json_encode($obj);
+			return;
+		}
 		$r1=$this->container_model->validate_container($id_container);
 		if($r1 != NULL){
 			foreach ($r1 as $row){
@@ -170,6 +175,29 @@ class Container extends CI_Controller
 		$obj["mensaje"] = $obj["resultado"] ?
 			"Se reseteo el contenedor correctamente" :
 			"No se resetearon los datos, intente mas tarde";
+
+		echo json_encode($obj);
+	}
+
+	public function get_containers():void
+	{
+		$r=$this->container_model->get_containers();
+		$obj["resultado"] = $r != NULL;
+		$obj["mensaje"] = $obj["resultado"] ?
+			"recuperacion de datos correcto" : "No se encontraron datos";
+		$obj["container"] = $r;
+
+		echo json_encode($obj);
+	}
+
+	public function get_container():void
+	{
+		$id_container=$this->input->post('id_container');
+		$r=$this->container_model->get_container($id_container);
+		$obj["resultado"] = $r != FALSE;
+		$obj["mensaje"] = $obj["resultado"] ?
+			"recuperacion de datos correcto" : "No se encontraron datos";
+		$obj["container"] = $r;
 
 		echo json_encode($obj);
 	}

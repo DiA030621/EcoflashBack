@@ -135,4 +135,34 @@ class Container_model extends CI_Model
 		return false;
 	}
 
+	public function get_containers() {
+		$sql = "
+            WITH LastWeight AS (
+                SELECT id_container, grams
+                FROM weight w
+                WHERE id IN (
+                    SELECT MAX(id)
+                    FROM weight
+                    GROUP BY id_container
+                )
+            ),
+            LastFillLevel AS (
+                SELECT id_container, centimeters
+                FROM fill_level fl
+                WHERE id IN (
+                    SELECT MAX(id)
+                    FROM fill_level
+                    GROUP BY id_container
+                )
+            )
+            SELECT c.*, lw.grams, lfl.centimeters
+            FROM container c
+            LEFT JOIN LastWeight lw ON c.id = lw.id_container
+            LEFT JOIN LastFillLevel lfl ON c.id = lfl.id_container;
+        ";
+
+		$rs = $this->db->query($sql);
+		return $rs->num_rows() > 0 ? $rs-> result() : null;
+	}
+
 }
