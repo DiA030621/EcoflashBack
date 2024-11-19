@@ -15,11 +15,24 @@ class Container extends CI_Controller
 		$id_container=$this->input->get('id_container');
 		$grams=$this->input->get('grams');
 		$centimeters=$this->input->get('centimeters');
-		if ($grams == null || $centimeters == null) {
-			$obj["mensaje"] = "No se estan recibiendo los datos de manera correcta";
+		$lat=$this->input->get('lat');
+		$long=$this->input->get('long');
+		if ($grams == null || $centimeters == null || $id_container == null || $lat == null || $long == null) {
+			$obj["mensaje"] = "No se estan recibiendo los datos de manera correcta, revisa el formato de envio de datos";
 			echo json_encode($obj);
 			return;
 		}
+		$data_location = array(
+			'lat' => $lat,
+			'long' => $long
+		);
+		$r0=$this->container_model->update_location($id_container, $data_location);
+		if($r0 == false){
+			$obj["mensaje"] = "Error al actualizar coordenadas";
+			echo json_encode($obj);
+			return;
+		}
+
 		$r1=$this->container_model->validate_container($id_container);
 		if($r1 != NULL){
 			foreach ($r1 as $row){

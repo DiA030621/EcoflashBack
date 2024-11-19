@@ -165,4 +165,15 @@ class Container_model extends CI_Model
 		return $rs->num_rows() > 0 ? $rs-> result() : null;
 	}
 
+	public function update_location($id_container, $data_location):bool
+	{
+		$this->db
+			->where('id', $id_container)
+			->update('container', $data_location);
+		$rs1=$this->db->affected_rows();
+		if ($rs1) {
+			return true;
+		}
+		return false;
+	}
 }
