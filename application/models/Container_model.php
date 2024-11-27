@@ -54,22 +54,32 @@ class Container_model extends CI_Model
 	public function get_levels($id_container)
 	{
 		$rs1=$this->db
-			->select_sum("centimeters", "centimeters")
+			->select("centimeters")
 			->from("fill_level")
 			->where('status', false)
 			->where('id_container', $id_container)
+			->order_by('id', 'DESC')
+			->limit(1)
 			->get();
+//		die($this->db->last_query());
+
 		$rs2=$this->db
-			->select_sum("grams", "grams")
+			->select("grams", "grams")
 			->from("weight")
 			->where('status', false)
 			->where('id_container', $id_container)
+			->order_by('id', 'DESC')
+			->limit(1)
 			->get();
-		print_r($rs1->result()[0]->centimeters);
-		if ($rs1->result()[0]->centimeters > 0 and $rs2->result()[0]->grams > 0) {
-			$response["centimeters"]=$rs1->result()[0]->centimeters;
-			$response["grams"]=$rs2->result()[0]->grams;
-			return $response;
+//
+//		var_dump($rs1->result());
+//		die();
+		if ($rs1->result() != null and $rs2->result() != null) {
+			if ($rs1->result()[0]->centimeters > 0 and $rs2->result()[0]->grams > 0) {
+				$response["centimeters"]=$rs1->result()[0]->centimeters;
+				$response["grams"]=$rs2->result()[0]->grams;
+				return $response;
+			}
 		}
 		return false;
 	}
@@ -82,6 +92,7 @@ class Container_model extends CI_Model
 			->where('status', true)
 			->where('id_container', $id_container)
 			->order_by('id', 'DESC')
+			->limit(1)
 			->get();
 		$rs2=$this->db
 			->select("grams", "grams")
@@ -89,10 +100,17 @@ class Container_model extends CI_Model
 			->where('status', true)
 			->where('id_container', $id_container)
 			->order_by('id', 'DESC')
+			->limit(1)
 			->get();
-		if ($rs1->result()[0]->centimeters > 0 and $rs2->result()[0]->grams > 0) {
+//		var_dump($rs1->result()[0]->centimeters);
+//		die();
+		if ($rs1->result() != null and $rs2->result() != null) {
 			$response["centimeters"]=$rs1->result()[0]->centimeters;
 			$response["grams"]=$rs2->result()[0]->grams;
+			return $response;
+		} else {
+			$response["centimeters"]=0;
+			$response["grams"]=0;
 			return $response;
 		}
 		return false;
