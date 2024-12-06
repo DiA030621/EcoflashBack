@@ -7,7 +7,10 @@ class Container extends CI_Controller
 		$this->load->model("container_model");
 		$this->load->model("user_model");
 		header('Access-Control-Allow-Origin: *');
+		header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 		header('Access-Control-Allow-Headers: Content-Type');
+//		header('Access-Control-Allow-Origin: *');
+//		header('Access-Control-Allow-Headers: Content-Type');
 	}
 
 	public function container_levels(): void
@@ -43,11 +46,11 @@ class Container extends CI_Controller
 				$diff_grams = abs($grams - $grams1);
 				$diff_centimeters = abs($centimeters - $centimeters1);
 
-				if ($diff_grams <= 5 && $diff_centimeters <= 0.5) {
-					$obj["mensaje"] = "Los niveles no han cambiado";
-					echo json_encode($obj);
-					return;
-				}
+//				if ($diff_grams <= 1 && $diff_centimeters <= 0.1) {
+//					$obj["mensaje"] = "Los niveles no han cambiado";
+//					echo json_encode($obj);
+//					return;
+//				}
 			}
 		}
 		$data_fill=array(
@@ -108,7 +111,7 @@ class Container extends CI_Controller
 		$r_levels_diff=$this->container_model->get_levels_diff($id_container);
 		if ($r_levels_diff == false) {
 			$obj["resultado"] = false;
-			$obj["mensaje"]="Error, no se enconraron registros anteriores";
+			$obj["mensaje"]="No se enconraron registros anteriores de basura";
 			echo json_encode($obj);
 			return;
 		}
@@ -117,7 +120,7 @@ class Container extends CI_Controller
 		$r_levels=$this->container_model->get_levels($id_container);
 		if ($r_levels == false) {
 			$obj["resultado"] = false;
-			$obj["mensaje"]="Error, no se enconraron registros nuevos";
+			$obj["mensaje"]="No se enconraron registros nuevos de basura";
 			echo json_encode($obj);
 			return;
 		}
@@ -170,12 +173,21 @@ class Container extends CI_Controller
 	public function reset_container():void
 	{
 		$id_container=$this->input->post('id_container');
+		$rf=$this->container_model->max_fill($id_container);
+		if ($rf == false) {
+			$obj["resultado"] = false;
+			$obj["mensaje"]="No se encontro contenedor";
+		}else{
+			foreach ($rf as $r) {
+				$max_fill_level=$r;
+			}
+		}
 		$data_container=array(
 			'status'=> true
 		);
 		$data_fill=array(
 			'id_container'=> $id_container,
-			'centimeters'=> 0,
+			'centimeters'=> $max_fill_level,
 			'status'=> true,
 		);
 		$data_weight=array(

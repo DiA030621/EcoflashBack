@@ -194,4 +194,16 @@ class Container_model extends CI_Model
 		}
 		return false;
 	}
+
+	public function max_fill($id_container)
+	{
+		$rs=$this->db
+			->select("max_fill_level", "max_fill_level")
+			->from("container")
+			->where('id', $id_container)
+			->limit(1)
+			->get();
+		$response["max_fill_level"]=$rs->result()[0]->max_fill_level;
+		return $response;
+	}
 }

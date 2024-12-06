@@ -12,7 +12,7 @@ class User_model extends CI_Model
 	public function validate_user($data)
 	{
 		$rs=$this->db
-			->select("id, type, score")
+			->select("id, type, score, name, lastname")
 			->from("users")
 			->where('passwd', $data['passwd'])
 			->where('email', $data['email'])
