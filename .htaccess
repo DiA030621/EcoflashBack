@@ -1,6 +1,6 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /ecoflash/
+    RewriteBase /zeroday/
 
     # Redirigir todas las solicitudes que no sean archivos existentes a index.php
     RewriteCond %{REQUEST_FILENAME} !-f
