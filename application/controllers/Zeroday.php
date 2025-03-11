@@ -5,6 +5,7 @@ class Zeroday extends CI_Controller
 	{
 		parent::__construct();
 		$this->load->model("zeroday_model");
+		$this->load->library('email');
 		header('Access-Control-Allow-Origin: *');
 		header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 		header('Access-Control-Allow-Headers: Content-Type');
@@ -22,30 +23,37 @@ class Zeroday extends CI_Controller
 		$email=$this->input->post('email');
 		$phone=$this->input->post('phone');
 		$address=$this->input->post('address');
+		$total_price=$this->input->post('total_price');
+		$quantity=$this->input->post('quantity');
+		$isDuplicated=$this->input->post('isDuplicated');
+//		print_r($isDuplicated);
+//		die();
 		$data=array(
 			'name'=>$name,
 			'phone'=>$phone,
 			'address'=>$address,
 			'email'=>$email
 		);
-		$r = $this->zeroday_model->customer_purchase($data);
-
-		$obj["resultado"] = $r != NULL && $r > 0;
-		$obj["mensaje"] = $obj["resultado"] ?
-			"Se inserto comprador correctamente con ID: $r" :
-			"No se insertaron los datos del comprador";
-		$obj["id"] = $r; // Agregar el ID en la respuesta
-
-
-		echo json_encode($obj);
-	}
-
-	public function purchase(): void
-	{
-		$customer_id=$this->input->post('customer_id');
-		$total_price=$this->input->post('total_price');
-		$quantity=$this->input->post('quantity');
-		$amount=$this->input->post('amount');
+		if ($isDuplicated == 1){
+			$r = $this->zeroday_model->customer_update($data);
+			if(!$r){
+				$obj["resultado"] = false;
+				$obj["mensaje"] ="No se actualizaron los datos del comprador";
+				$obj["id"] = $r;
+				echo json_encode($obj);
+				return;
+			}
+		}elseif($isDuplicated == 0){
+			$r = $this->zeroday_model->customer_purchase($data);
+			if($r == NULL || $r < 0){
+				$obj["resultado"] = false;
+				$obj["mensaje"] ="No se insertaron los datos del comprador";
+				$obj["id"] = $r;
+				echo json_encode($obj);
+				return;
+			}
+		}
+		$customer_id = $r[0]->id;
 
 		$dataOrder=array(
 			'customer_id'=>$customer_id,
@@ -58,17 +66,28 @@ class Zeroday extends CI_Controller
 		);
 		$dataPayment=array(
 			'payment_status'=>"pending",
-			'amount'=> $amount
+			'amount'=> $quantity
 		);
 		$r=$this->zeroday_model->order($dataOrder, $dataOrderProduct, $dataPayment);
-
-
 		$obj["resultado"] = $r != NULL;
 		$obj["mensaje"] = $obj["resultado"] ?
 			"Se inserto la compra correctamente con ID: $r" :
 			"No se insertaron los datos del comprador";
-		$obj["id"] = $r;
+		$obj["orderId"] = $r;
 
+		echo json_encode($obj);
+	}
+
+	public function payment(): void
+	{
+		$order_id=$this->input->post('order_id');
+
+		$r=$this->zeroday_model->payment($order_id);
+
+		$obj["resultado"] = $r;
+		$obj["mensaje"] = $obj["resultado"] ?
+			"Se realizo el pago correctamente con ID: $order_id" :
+			"No se pudo realizar el pago";
 
 		echo json_encode($obj);
 
@@ -88,5 +107,86 @@ class Zeroday extends CI_Controller
 		echo json_encode($obj);
 	}
 
+	public function send_verification_email() {
+		$this->load->library('email');
+		$email=$this->input->post('email');
+
+		$config = array(
+			'protocol'    => 'smtp',
+			'smtp_host'   => 'smtp.gmail.com',
+			'smtp_user'   => 'diego.0d4y@gmail.com',
+			'smtp_pass'   => 'qmjo ftds nfds vuzl',
+			'smtp_port'   => 587,
+			'smtp_crypto' => 'tls',
+			'mailtype'    => 'html',
+			'charset'     => 'utf-8',
+			'newline'     => "\r\n",
+			'wordwrap'    => TRUE
+		);
+
+
+//		if ($this->email->send()) {
+//			echo "Correo enviado correctamente.";
+//		} else {
+//			echo "Error al enviar el correo: " . $this->email->print_debugger();
+//		}
+		if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+			echo json_encode(['status' => 'error', 'message' => 'Correo inválido']);
+			return;
+		}
+		$token = bin2hex(random_bytes(32));
+
+		if ($this->zeroday_model->set_verification_token($email, $token)) {
+			$verification_link = base_url("verify?token=" . $token);
+
+			// Configurar y enviar el correo
+			$this->email->initialize($config);
+			$this->email->from('diego.0d4y@gmail.com', 'Verificación de Cuenta');
+			$this->email->to($email);
+			$this->email->subject('Verifica tu correo');
+			$this->email->message("Haz clic en el siguiente enlace para verificar tu correo: <a href='$verification_link'>$verification_link</a>");
+
+			if ($this->email->send()) {
+				echo json_encode(['status' => 'success', 'message' => 'Correo de verificacion enviado']);
+			} else {
+				echo json_encode(['status' => 'error', 'message' => 'Error al enviar el correo']);
+			}
+		} else {
+			echo json_encode(['status' => 'error', 'message' => 'No se pudo generar el token']);
+		}
+	}
+
+	public function verify()
+	{
+		$token = $this->input->get('token');
+
+		if (!$token) {
+			show_error("Token inválido", 400);
+			return;
+		}
+
+		// Validar token en la BD
+		$email = $this->zeroday_model->verify_token($token);
+		if ($email) {
+			// Marcar el correo como verificado
+			$this->zeroday_model->set_verified($email);
+			echo "Correo verificado correctamente.";
+		} else {
+			show_error("Token inválido o expirado", 400);
+		}
+
+	}
+
+	public function get_email()
+	{
+		$email = $this->input->get('email');
+		$rEmail = $this->zeroday_model->get_email($email);
+
+		$obj["resultado"] = $rEmail != NULL;
+		$obj["mensaje"] = $obj["resultado"] ?
+			"recuperacion de email" : "No se encontraro email";
+		$obj["order"] = $rEmail;
+		echo json_encode($obj);
+	}
 
 }
