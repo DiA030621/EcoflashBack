@@ -52,6 +52,15 @@ class Zeroday extends CI_Controller
 				echo json_encode($obj);
 				return;
 			}
+		}elseif ($isDuplicated == 2){
+			$r = $this->zeroday_model->get_email($email);
+			if($r == NULL || $r < 0){
+				$obj["resultado"] = false;
+				$obj["mensaje"] ="Error";
+				$obj["id"] = $r;
+				echo json_encode($obj);
+				return;
+			}
 		}
 		$customer_id = $r[0]->id;
 
@@ -110,6 +119,14 @@ class Zeroday extends CI_Controller
 	public function send_verification_email() {
 		$this->load->library('email');
 		$email=$this->input->post('email');
+		$r1 = $this->zeroday_model->get_email($email);
+		$row = $r1->row();
+		$verification_token = $row->verification_token;
+		$is_verified = $row->is_verified;
+		if($verification_token != null && $is_verified ==1){
+			echo 'hola';
+			return;
+		}
 
 		$config = array(
 			'protocol'    => 'smtp',
@@ -124,12 +141,6 @@ class Zeroday extends CI_Controller
 			'wordwrap'    => TRUE
 		);
 
-
-//		if ($this->email->send()) {
-//			echo "Correo enviado correctamente.";
-//		} else {
-//			echo "Error al enviar el correo: " . $this->email->print_debugger();
-//		}
 		if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
 			echo json_encode(['status' => 'error', 'message' => 'Correo inválido']);
 			return;

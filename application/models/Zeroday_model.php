@@ -123,11 +123,13 @@ class Zeroday_model extends CI_Model
 
 	public function get_email($email) {
 		$rs=$this->db
-			->select("id, email, is_verified")
+			->select("id, email, is_verified, verification_token")
 			->from("customer")
 			->where('email', $email)
 			->get();
-		return $rs->num_rows() > 0 ? $rs-> result() : null;
+//		die($this->db->last_query());
+		$rs->num_rows() > 0 ? $rs-> result() : false;
+		return $rs;
 	}
 	public function customer_update($data)
 	{
