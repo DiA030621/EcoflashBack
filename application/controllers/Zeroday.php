@@ -36,6 +36,7 @@ class Zeroday extends CI_Controller
 		);
 		if ($isDuplicated == 1){
 			$r = $this->zeroday_model->customer_update($data);
+			$customer_id = $r[0]->id;
 			if(!$r){
 				$obj["resultado"] = false;
 				$obj["mensaje"] ="No se actualizaron los datos del comprador";
@@ -45,6 +46,7 @@ class Zeroday extends CI_Controller
 			}
 		}elseif($isDuplicated == 0){
 			$r = $this->zeroday_model->customer_purchase($data);
+			$customer_id=$r;
 			if($r == NULL || $r < 0){
 				$obj["resultado"] = false;
 				$obj["mensaje"] ="No se insertaron los datos del comprador";
@@ -54,15 +56,14 @@ class Zeroday extends CI_Controller
 			}
 		}elseif ($isDuplicated == 2){
 			$r = $this->zeroday_model->get_email($email);
-			if($r == NULL || $r < 0){
-				$obj["resultado"] = false;
-				$obj["mensaje"] ="Error";
-				$obj["id"] = $r;
+			$customer_id = $r->result_object[0]->id??null;
+			if($customer_id == null){
+				$obj["resultant"] = false;
+				$obj["mensaje"] ="Error en recuperacion de id";
 				echo json_encode($obj);
 				return;
 			}
 		}
-		$customer_id = $r[0]->id;
 
 		$dataOrder=array(
 			'customer_id'=>$customer_id,
