@@ -91,13 +91,39 @@ class Zeroday extends CI_Controller
 	public function payment(): void
 	{
 		$order_id=$this->input->post('order_id');
+		$email=$this->input->post('email');
+		$this->load->library('email');
 
+		$config = array(
+			'protocol'    => 'smtp',
+			'smtp_host'   => 'smtp.gmail.com',
+			'smtp_user'   => 'diego.0d4y@gmail.com',
+			'smtp_pass'   => 'qmjo ftds nfds vuzl',
+			'smtp_port'   => 587,
+			'smtp_crypto' => 'tls',
+			'mailtype'    => 'html',
+			'charset'     => 'utf-8',
+			'newline'     => "\r\n",
+			'wordwrap'    => TRUE
+		);
 		$r=$this->zeroday_model->payment($order_id);
+		if($r){
+			$this->email->initialize($config);
+			$this->email->from('diego.0d4y@gmail.com', 'Orden de compra 0D4Y');
+			$this->email->to($email);
+			$this->email->subject('Orde de compra 0D4Y');
+			$this->email->message("Comprase Hardware VPN 0D4Y, para mas informacion consulta en la pagina oficial con el siguiente numero de orden: ".$order_id);
+
+			if ($this->email->send()) {
+//				echo json_encode(['status' => 'success', 'message' => 'Correo enviado orden de compra']);
+			}
+		}
 
 		$obj["resultado"] = $r;
 		$obj["mensaje"] = $obj["resultado"] ?
 			"Se realizo el pago correctamente con ID: $order_id" :
 			"No se pudo realizar el pago";
+
 
 		echo json_encode($obj);
 
