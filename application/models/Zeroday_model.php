@@ -63,6 +63,7 @@ class Zeroday_model extends CI_Model
 		$this->db->select('o.order_status, o.customer_id, p.payment_status, p.amount');
 		$this->db->select("(SELECT c.name FROM customer c WHERE c.id = o.customer_id) AS customer_name", false);
 		$this->db->select("(SELECT c.email FROM customer c WHERE c.id = o.customer_id) AS customer_email", false);
+		$this->db->select("(SELECT c.address FROM customer c WHERE c.id = o.customer_id) AS customer_address", false);
 		$this->db->select("(SELECT c.phone FROM customer c WHERE c.id = o.customer_id) AS customer_phone", false);
 		$this->db->from('orders o');
 		$this->db->join('payment p', 'p.order_id = o.id', 'inner');

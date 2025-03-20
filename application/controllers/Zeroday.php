@@ -227,4 +227,67 @@ class Zeroday extends CI_Controller
 		echo json_encode($obj);
 	}
 
+	public function generate_invoice() {
+		$order_id = $this->input->post('order_id');
+		$customer_name = $this->input->post('customer_name');
+		$customer_email = $this->input->post('customer_email');
+		$customer_address = $this->input->post('customer_address');
+		$customer_rfc = $this->input->post('customer_rfc');
+		$amount = $this->input->post('amount');
+
+		// Validación del correo
+		if (!$customer_email || !filter_var($customer_email, FILTER_VALIDATE_EMAIL)) {
+			echo json_encode(['status' => 'error', 'message' => 'Correo inválido']);
+			return;
+		}
+
+		$this->load->library('pdf');
+		$pdf = new Pdf();
+		$pdf->AddPage();
+		$pdf->SetFont('helvetica', '', 12);
+
+		// Contenido de la factura
+		$html = "<h2>Factura Electrónica</h2>
+        <p><strong>Cliente:</strong> $customer_name</p>
+        <p><strong>Dirección:</strong> $customer_address</p>
+        <p><strong>RFC:</strong> $customer_rfc</p>
+        <p><strong>Monto Total:</strong> $1000.00</p>";
+
+		$pdf->writeHTML($html, true, false, true, false, '');
+
+		// Guardar el PDF en la carpeta "facturas"
+		$pdf_path = FCPATH . "facturas/factura_$order_id.pdf";
+		$pdf->Output($pdf_path, 'F'); // 'F' = Guardar en archivo
+
+		// Configuración del correo
+		$this->load->library('email');
+		$config = array(
+			'protocol'    => 'smtp',
+			'smtp_host'   => 'smtp.gmail.com',
+			'smtp_user'   => 'diego.0d4y@gmail.com',
+			'smtp_pass'   => 'qmjo ftds nfds vuzl',
+			'smtp_port'   => 587,
+			'smtp_crypto' => 'tls',
+			'mailtype'    => 'html',
+			'charset'     => 'utf-8',
+			'newline'     => "\r\n",
+			'wordwrap'    => TRUE
+		);
+
+		$this->email->initialize($config);
+		$this->email->from('diego.0d4y@gmail.com', 'Empresa 0D4Y');
+		$this->email->to($customer_email);
+		$this->email->subject('Tu factura electrónica');
+		$this->email->message('<p>Adjunto encontrarás tu factura electrónica.</p>');
+		$this->email->attach($pdf_path);
+
+		// Enviar el correo y responder con JSON
+		if ($this->email->send()) {
+			echo json_encode(['status' => 'success', 'message' => 'Factura enviada correctamente']);
+		} else {
+			echo json_encode(['status' => 'error', 'message' => 'Error al enviar la factura', 'debug' => $this->email->print_debugger()]);
+		}
+	}
+
+
 }
