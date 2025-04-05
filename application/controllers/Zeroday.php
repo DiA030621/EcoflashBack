@@ -235,7 +235,6 @@ class Zeroday extends CI_Controller
 		$customer_rfc = $this->input->post('customer_rfc');
 		$amount = $this->input->post('amount');
 
-		// Validación del correo
 		if (!$customer_email || !filter_var($customer_email, FILTER_VALIDATE_EMAIL)) {
 			echo json_encode(['status' => 'error', 'message' => 'Correo inválido']);
 			return;
@@ -243,22 +242,62 @@ class Zeroday extends CI_Controller
 
 		$this->load->library('pdf');
 		$pdf = new Pdf();
+//		$pdf->AddPage();
+		$pdf->SetFont('helvetica', '', 12);
+
 		$pdf->AddPage();
 		$pdf->SetFont('helvetica', '', 12);
 
-		// Contenido de la factura
-		$html = "<h2>Factura Electrónica</h2>
-        <p><strong>Cliente:</strong> $customer_name</p>
-        <p><strong>Dirección:</strong> $customer_address</p>
-        <p><strong>RFC:</strong> $customer_rfc</p>
-        <p><strong>Monto Total:</strong> $1000.00</p>";
+// Agregar el logo y evitar superposición
+		$pdf->Image(FCPATH . 'Logo.png', 10, 10, 40);
+		$pdf->SetY(50); // Ajustar la posición después del logo
+
+// Información de la empresa
+		$html = "<h2 style='text-align:center;'>Factura Electrónica</h2>
+<p><strong>Empresa:</strong> 0D4Y</p>
+<p><strong>Propietario:</strong> Jose de Jesus Valencia Rojas</p>
+<p><strong>Dirección:</strong> Av. Tecnológica #123, CDMX</p>
+<p><strong>Teléfono:</strong> +52 55 1234 5678</p>
+<hr>
+<p><strong>Cliente:</strong> $customer_name</p>
+<p><strong>Dirección:</strong> $customer_address</p>
+<p><strong>RFC:</strong> $customer_rfc</p>
+<hr>
+<h3>Detalles de la Compra</h3>
+<table border='1' cellspacing='0' cellpadding='5'>
+    <tr>
+        <th>Producto</th>
+        <th>Cantidad</th>
+        <th>Precio Unitario (con IVA)</th>
+        <th>Subtotal</th>
+    </tr>";
+
+		$price_per_unit = 300;
+		$total = $amount * $price_per_unit;
+		$subtotal = $total / 1.16;
+		$iva = $total - $subtotal;
+
+		$html .= "<tr>
+    <td>HARDWARE 0D4Y</td>
+    <td>$amount</td>
+    <td>$" . number_format($price_per_unit, 2) . "</td>
+    <td>$" . number_format($subtotal, 2) . "</td>
+</tr>
+</table>
+<p><strong>Subtotal (sin IVA):</strong> $" . number_format($subtotal, 2) . "</p>
+<p><strong>IVA (16%):</strong> $" . number_format($iva, 2) . "</p>
+<p><strong>Total (con IVA):</strong> $" . number_format($total, 2) . "</p>";
 
 		$pdf->writeHTML($html, true, false, true, false, '');
 
-		// Guardar el PDF en la carpeta "facturas"
-		$pdf_path = FCPATH . "facturas/factura_$order_id.pdf";
-		$pdf->Output($pdf_path, 'F'); // 'F' = Guardar en archivo
+// Agregar código QR en la esquina inferior derecha
+//		$pdf->Image(FCPATH . 'QR_code.png', 160, 250, 30);
 
+		$pdf_path = FCPATH . "facturas/factura_$order_id.pdf";
+		$pdf->Output($pdf_path, 'F');
+
+
+//die();
 		// Configuración del correo
 		$this->load->library('email');
 		$config = array(
@@ -281,13 +320,13 @@ class Zeroday extends CI_Controller
 		$this->email->message('<p>Adjunto encontrarás tu factura electrónica.</p>');
 		$this->email->attach($pdf_path);
 
-		// Enviar el correo y responder con JSON
 		if ($this->email->send()) {
 			echo json_encode(['status' => 'success', 'message' => 'Factura enviada correctamente']);
 		} else {
 			echo json_encode(['status' => 'error', 'message' => 'Error al enviar la factura', 'debug' => $this->email->print_debugger()]);
 		}
 	}
+
 
 
 }
